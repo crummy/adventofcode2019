@@ -11,11 +11,19 @@ fun fuelCounterUpper(mass: Int): Int {
     return roundedDown - 2
 }
 
+fun fuelCounterUpperIncludingFuel(mass: Int): Int {
+    val fuel = fuelCounterUpper(mass)
+    return when {
+        fuel <= 0 -> 0
+        else -> fuel + fuelCounterUpperIncludingFuel(fuel)
+    }
+}
+
 fun main() {
     val totalFuelRequired = File("src/main/resources/input/day1.txt")
         .useLines { module ->
             module.map { it.toInt() }
-                .map { fuelCounterUpper(it) }
+                .map { fuelCounterUpperIncludingFuel(it) }
                 .sum()
         }
     println(totalFuelRequired)

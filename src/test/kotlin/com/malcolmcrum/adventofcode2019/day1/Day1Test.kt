@@ -24,6 +24,14 @@ internal class Day1Test {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource
+    fun `calculate fuel required, including mass of fuel`(values: FuelTest) {
+        val mass = values.mass
+        val fuel = values.expectedFuel
+        assertThat(fuelCounterUpperIncludingFuel(mass)).isEqualTo(fuel)
+    }
+
     companion object {
         @JvmStatic
         fun `calculate fuel required`() = listOf(
@@ -36,6 +44,13 @@ internal class Day1Test {
                 FuelTest(11, 1),
                 FuelTest(15, 3)
             )
+        )
+
+        @JvmStatic
+        fun `calculate fuel required, including mass of fuel`() = listOf(
+            FuelTest(14, 2),
+            FuelTest(1969, 966),
+            FuelTest(100756, 50346)
         )
     }
 }
