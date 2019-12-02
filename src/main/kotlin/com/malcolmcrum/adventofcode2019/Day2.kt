@@ -14,14 +14,15 @@ class Emulator {
         val opcode = data[pc]
         when (opcode) {
             99 -> return
-            1 -> add(data[pc+1], data[pc+2], data[pc+3])
-            2 -> multiply(data[pc+1], data[pc+2], data[pc+3])
+            1 -> add(data[pc + 1], data[pc + 2], data[pc + 3])
+            2 -> multiply(data[pc + 1], data[pc + 2], data[pc + 3])
             else -> throw IllegalStateException("Invalid opcode $opcode")
         }
         pc += 4
     }
 
     fun run() {
+        pc = 0
         while (data[pc] != 99) {
             tick()
         }
@@ -38,14 +39,20 @@ class Emulator {
 }
 
 fun main() {
-    val instructions = File("src/main/resources/input/day2.txt")
+    val originalInstructions = File("src/main/resources/input/day2.txt")
         .readLines().flatMap { it.split(",") }.map { it.toInt() }.toIntArray()
-    instructions[1] = 12
-    instructions[2] = 2
-
     val emulator = Emulator()
-    emulator.load(instructions)
-    emulator.run()
-
-    println(emulator.data[0])
+    for (x in (0..99)) {
+        for (y in (0..99)) {
+            val instructions = originalInstructions.copyOf()
+            instructions[1] = x
+            instructions[2] = y
+            emulator.load(instructions)
+            emulator.run()
+            if (emulator.data[0] == 19690720) {
+                println("$x, $y")
+                return
+            }
+        }
+    }
 }
