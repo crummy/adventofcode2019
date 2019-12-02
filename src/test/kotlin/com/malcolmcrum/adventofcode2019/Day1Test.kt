@@ -1,4 +1,4 @@
-package com.malcolmcrum.adventofcode2019.day1
+package com.malcolmcrum.adventofcode2019
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo

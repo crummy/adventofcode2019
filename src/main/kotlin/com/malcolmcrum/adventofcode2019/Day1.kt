@@ -1,4 +1,4 @@
-package com.malcolmcrum.adventofcode2019.day1
+package com.malcolmcrum.adventofcode2019
 
 import java.io.File
 import kotlin.math.floor
