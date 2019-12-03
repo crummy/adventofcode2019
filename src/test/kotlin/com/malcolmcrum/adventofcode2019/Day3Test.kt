@@ -39,18 +39,28 @@ internal class Day3Test {
     @Test
     fun `verify simple wire parsing`() {
         val wire = parseWire("R1")
-        assertThat(wire).containsOnly(Point(0, 0), Point(1, 0))
+        assertThat(wire.keys).containsOnly( Point(1, 0))
     }
 
     @Test
     fun `verify wire parsing with multiple steps`() {
         val wire = parseWire("R1,U1")
-        assertThat(wire).containsOnly(Point(0, 0), Point(1, 0), Point(1, 1))
+        assertThat(wire.keys).containsOnly(Point(1, 0), Point(1, 1))
     }
 
     @Test
     fun `verify wire parsing with overlap`() {
         val wire = parseWire("R1,U1,L1,D1")
-        assertThat(wire).containsOnly(Point(0, 0), Point(1, 0), Point(1, 1), Point(0, 1))
+        assertThat(wire.keys).containsOnly(Point(1, 0), Point(1, 1), Point(0, 1), Point(0, 0))
+    }
+
+    @Test
+    fun `verify step parsing`() {
+        val wire1 = parseWire("R75,D30,R83,U83,L12,D49,R71,U7,L72")
+        val wire2 = parseWire("U62,R66,U55,R34,D71,R55,D58,R83")
+
+        val steps = shortestStepsToIntersection(wire1, wire2)
+
+        assertThat(steps).isEqualTo(610)
     }
 }

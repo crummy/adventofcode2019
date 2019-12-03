@@ -4,23 +4,31 @@ import java.io.File
 import java.util.*
 import kotlin.math.abs
 
-fun nearestIntersection(a: Set<Point>, b: Set<Point>): Point {
-    return a
+fun nearestIntersection(a: Map<Point, Int>, b: Map<Point, Int>): Point {
+    return a.keys
         .filter { it != Point.START }
         .filter { b.contains(it) }
         .minBy { it.manhattanDistance }!!
 }
 
-fun parseWire(steps: String): Set<Point> {
-    val points = mutableSetOf<Point>()
+fun shortestStepsToIntersection(a: Map<Point, Int>, b: Map<Point, Int>): Int {
+    return a
+        .filter { (point, _) -> b.contains(point) }
+        .map { (point, steps) -> steps + b.getValue(point) }
+        .min()!!
+}
+
+fun parseWire(steps: String): Map<Point, Int> {
+    val points = mutableMapOf<Point, Int>()
     var x = 0
     var y = 0
-    points.add(Point(x, y))
+    var stepCount = 0
     for (step in steps.split(",")) {
         val instruction = step[0]
         val count = step.substring(1).toInt()
         assert(count >= 0)
         repeat(count) {
+            stepCount++
             when (instruction) {
                 'U' -> y++
                 'D' -> y--
@@ -28,7 +36,7 @@ fun parseWire(steps: String): Set<Point> {
                 'R' -> x++
                 else -> throw InputMismatchException("Invalid instruction $instruction")
             }
-            points.add(Point(x, y))
+            points.putIfAbsent(Point(x, y), stepCount)
         }
     }
     return points
@@ -50,4 +58,8 @@ fun main() {
     val intersection = nearestIntersection(wire1, wire2)
 
     println(intersection.manhattanDistance)
+
+    val shortestPath = shortestStepsToIntersection(wire1, wire2)
+
+    println(shortestPath)
 }
