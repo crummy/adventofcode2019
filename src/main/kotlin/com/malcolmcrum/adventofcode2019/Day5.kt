@@ -116,12 +116,10 @@ class Emulator2(private val data: IntArray) {
     fun parseInstruction(instruction: Int): Instruction {
         val padded = instruction.toString().padStart(5, '0')
         val (A, B, C, DE) = "(\\d)(\\d)(\\d)(\\d\\d)".toRegex().matchEntire(padded)!!.destructured
-        print("Parsed $padded to $A, $B, $C, $DE: ")
         val param1 = readParameter(C.toInt())
         val param2 = readParameter(B.toInt())
         val param3 = readParameter(A.toInt())
         val operation = parseOperation(DE)
-        println(operation)
         return Instruction(operation, param1, param2, param3)
     }
 
