@@ -16,6 +16,10 @@ class SolarSystem(val masses: Map<String, Mass>) {
         return 1 + countOrbits(orbitee.orbits)
     }
 
+    fun orbitalTransfersBetween(from: String, to: String): Int {
+        return 0
+    }
+
     companion object {
         fun parse(orbits: List<String>): SolarSystem {
             val masses: MutableMap<String, Mass> = mutableMapOf()
