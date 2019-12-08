@@ -79,4 +79,18 @@ internal class Day6Test {
 
         assertThat(transfers).isEqualTo(4)
     }
+
+    @Test
+    fun `simple test distance to santa`() {
+        val system = SolarSystem.parse(
+            listOf(
+                "COM)YOU",
+                "COM)SAN"
+            )
+        )
+
+        val transfers = system.orbitalTransfersBetween("YOU", "SAN")
+
+        assertThat(transfers).isEqualTo(0)
+    }
 }

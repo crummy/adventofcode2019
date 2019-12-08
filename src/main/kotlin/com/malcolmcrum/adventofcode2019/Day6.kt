@@ -16,8 +16,18 @@ class SolarSystem(val masses: Map<String, Mass>) {
         return 1 + countOrbits(orbitee.orbits)
     }
 
-    fun orbitalTransfersBetween(from: String, to: String): Int {
-        return 0
+    fun orbitalTransfersBetween(a: String, b: String): Int {
+        val aOrbitsToCOM = orbitsToCOM(a)
+        val bOrbitsToCOM = orbitsToCOM(b)
+        val orbitsNotInCommon = aOrbitsToCOM + bOrbitsToCOM - aOrbitsToCOM.intersect(bOrbitsToCOM)
+        return orbitsNotInCommon.count()
+    }
+
+    private fun orbitsToCOM(name: String): List<String> {
+        if (name == CENTER_OF_MASS) return emptyList()
+
+        val orbitee = masses[name] ?: error("$name orbits nothing??")
+        return  listOf(orbitee.orbits) + orbitsToCOM(orbitee.orbits)
     }
 
     companion object {
@@ -34,7 +44,7 @@ class SolarSystem(val masses: Map<String, Mass>) {
     }
 }
 
-class Mass(val name: String, val orbits: String, val orbitedBy: MutableList<String> = mutableListOf())
+class Mass(val name: String, val orbits: String)
 
 
 fun main() {
@@ -44,4 +54,8 @@ fun main() {
     val count = system.countOrbits()
 
     println(count)
+
+    val orbitsToSanta = system.orbitalTransfersBetween("YOU", "SAN")
+
+    println(orbitsToSanta)
 }
