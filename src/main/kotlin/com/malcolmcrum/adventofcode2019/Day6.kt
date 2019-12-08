@@ -4,28 +4,40 @@ import java.io.File
 
 const val CENTER_OF_MASS = "COM"
 
-fun parseOrbits(string: String): Map<String, String> {
-    return string.trim().lines().map { it.split(")") }
-        .map { it[1] to it[0] }
-        .toMap()
+class SolarSystem(val masses: Map<String, Mass>) {
+    fun countOrbits(): Int {
+        return masses.values.map { countOrbits(it.name) }.sum()
+    }
+
+    private fun countOrbits(mass: String): Int {
+        if (mass == CENTER_OF_MASS) return 0
+
+        val orbitee = masses[mass] ?: error("$mass orbits nothing??")
+        return 1 + countOrbits(orbitee.orbits)
+    }
+
+    companion object {
+        fun parse(orbits: List<String>): SolarSystem {
+            val masses: MutableMap<String, Mass> = mutableMapOf()
+            orbits.map { it.split(")") }
+                .map { it[0] to it[1] }
+                .forEach { (name, orbitedBy) ->
+                    val orbiter = Mass(orbitedBy, name)
+                    masses[orbitedBy] = orbiter
+                }
+            return SolarSystem(masses)
+        }
+    }
 }
 
-fun countOrbits(orbits: Map<String, String>): Int {
-    return orbits.values.map { countOrbits(orbits, it) }.sum()
-}
+class Mass(val name: String, val orbits: String, val orbitedBy: MutableList<String> = mutableListOf())
 
-fun countOrbits(orbits: Map<String, String>, mass: String): Int {
-    if (mass == CENTER_OF_MASS) return 1
-
-    val orbitsThisMass = orbits[mass] ?: error("$mass orbits nothing??")
-    return 1 + countOrbits(orbits, orbitsThisMass)
-}
 
 fun main() {
-    val input = File("src/main/resources/input/day6.txt").readText()
-    val orbits = parseOrbits(input)
+    val input = File("src/main/resources/input/day6.txt").readLines()
+    val system = SolarSystem.parse(input)
 
-    val count = countOrbits(orbits)
+    val count = system.countOrbits()
 
     println(count)
 }
