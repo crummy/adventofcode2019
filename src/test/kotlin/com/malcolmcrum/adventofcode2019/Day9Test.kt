@@ -28,7 +28,12 @@ internal class Day9Test {
 
     @Test
     fun `output 16-digit number`() {
-        val program = longArrayOf(1102, 34915192, 34915192, 7, 4, 7, 99, 0)
+        val program = longArrayOf(
+            1102, 34915192, 34915192, 7, // [7] = 34915192 * 34915192
+            4, 7, // output [7]
+            99, // end
+            0 // [7]
+        )
         val output = Emulator4("echo", program, listOf()).run()
 
         assertThat(output[0]).isGreaterThan(999999999999999)
