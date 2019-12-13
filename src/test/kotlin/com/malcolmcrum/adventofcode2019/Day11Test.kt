@@ -24,8 +24,7 @@ internal class Day11Test {
         robot.executeInstruction(1) // paint black
         robot.executeInstruction(0) // turn left
 
-        println(robot.paintedTiles)
-        assertThat(robot.paintedTiles).hasSize(6)
+        assertThat(robot.panels).hasSize(6)
     }
 
     @Test

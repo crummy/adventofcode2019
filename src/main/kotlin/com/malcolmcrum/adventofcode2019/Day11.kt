@@ -1,6 +1,7 @@
 package com.malcolmcrum.adventofcode2019
 
 import java.io.File
+import kotlin.math.abs
 
 typealias Panel = Pair<Int, Int>
 
@@ -25,10 +26,13 @@ enum class Direction(private val x: Int, private val y: Int) {
 class PaintingRobot {
     private var facing = Direction.UP
     private var position = Panel(0, 0)
-    private val panels: MutableMap<Panel, Long> = mutableMapOf()
+    val panels: MutableMap<Panel, Long> = mutableMapOf()
     val getColour = { panels[position] ?: 0 }
-    var paintedTiles = mutableSetOf<Panel>()
     var executeInstruction: (Long) -> Unit = { paint(it) }
+
+    init {
+        panels[position] = 1L
+    }
 
     private val turn: (Long) -> Unit = { direction: Long ->
         facing = when (direction) {
@@ -44,11 +48,33 @@ class PaintingRobot {
     private val paint: (Long) -> Unit = { colour: Long ->
         panels[position] = colour
         println("Painted $position with $colour")
-        paintedTiles.add(position)
         executeInstruction = turn
     }
 
+    fun getOutput(): Array<CharArray> {
+        var xMin = Int.MAX_VALUE
+        var xMax = Int.MIN_VALUE
+        var yMin = Int.MAX_VALUE
+        var yMax = Int.MIN_VALUE
+        for (panel in panels.keys) {
+            if (panel.first < xMin) xMin = panel.first
+            if (panel.first > xMax) xMax = panel.first
+            if (panel.second < yMin) yMin = panel.second
+            if (panel.second > yMax) yMax = panel.second
+        }
+        val height = abs(yMax - yMin) + 1
+        val width = abs(xMax - xMin) + 1
+        val output = array2dOfChar(height, width, ' ')
+        panels.forEach { (panel, colour) ->
+            output[panel.second - yMin][panel.first - xMin] = if (colour == 1L) '#' else '_'
+        }
+        return output
+    }
 }
+
+// from https://stackoverflow.com/a/34539856/281657
+fun array2dOfChar(sizeOuter: Int, sizeInner: Int, initial: Char): Array<CharArray> =
+    Array(sizeOuter) { CharArray(sizeInner) { initial } }
 
 class Emulator5(
     private val name: String,
@@ -232,5 +258,9 @@ fun main() {
     val robot = PaintingRobot()
     Emulator5("part1", instructions, robot.getColour, { robot.executeInstruction.invoke(it) }).run()
 
-    println(robot.paintedTiles.size)
+    println(robot.panels.size)
+
+    robot.getOutput().forEach {
+        println(it) // Output is mirrored... oops!
+    }
 }
