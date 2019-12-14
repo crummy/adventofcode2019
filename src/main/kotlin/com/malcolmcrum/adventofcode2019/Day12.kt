@@ -1,6 +1,7 @@
 package com.malcolmcrum.adventofcode2019
 
 import java.io.File
+import java.lang.RuntimeException
 import kotlin.math.abs
 
 fun Collection<Moon>.simulateMotion() {
@@ -21,6 +22,30 @@ fun Collection<Moon>.simulateMotion() {
 
 fun Collection<Moon>.totalEnergy(): Int {
     return this.sumBy { it.potentialEnergy() * it.kineticEnergy() }
+}
+
+fun Collection<Moon>.simulationsUntilRepeat(): Long {
+    val xRepeat = simulationsUntilAxisRepeats { it.x }.toLong()
+    val yRepeat = simulationsUntilAxisRepeats { it.y }.toLong()
+    val zRepeat = simulationsUntilAxisRepeats { it.z }.toLong()
+
+    return lcm(zRepeat, lcm(xRepeat, yRepeat))
+}
+
+// from https://rosettacode.org/wiki/Least_common_multiple#Kotlin
+fun gcd(a: Long, b: Long): Long = if (b == 0L) a else gcd(b, a % b)
+fun lcm(a: Long, b: Long): Long = a / gcd(a, b) * b
+
+fun Collection<Moon>.simulationsUntilAxisRepeats(axis: (Vector3) -> Int): Int {
+    val previousStates = mutableSetOf<Collection<Pair<Int, Int>>>()
+
+    repeat(Int.MAX_VALUE) { iteration ->
+        simulateMotion()
+        val key = this.map { Pair(axis.invoke(it.pos), axis.invoke(it.vel)) }
+        if (previousStates.contains(key)) return iteration
+        previousStates.add(key)
+    }
+    throw RuntimeException("Never found a repeat")
 }
 
 data class Moon(val pos: Vector3, val vel: Vector3 = Vector3(0, 0, 0)) {
@@ -47,7 +72,9 @@ fun main() {
             Moon(x.toInt(), y.toInt(), z.toInt())
         }
 
-    repeat(1000) { moons.simulateMotion() }
+    //repeat(1000) { moons.simulateMotion() }
 
-    println(moons.totalEnergy())
+    //println(moons.totalEnergy())
+
+    println(moons.simulationsUntilRepeat())
 }

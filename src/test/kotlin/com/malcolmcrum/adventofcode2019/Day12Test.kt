@@ -32,4 +32,18 @@ internal class Day12Test {
 
         assertThat(moons.totalEnergy()).isEqualTo(179)
     }
+
+    @Test
+    fun `find another identical state`() {
+        val moons = listOf(
+            Moon(-1, 0, 2),
+            Moon(2, -10, -7),
+            Moon(4, -8, 8),
+            Moon(3, 5, -1)
+        )
+
+        val count = moons.simulationsUntilRepeat()
+
+        assertThat(count).isEqualTo(2772)
+    }
 }
