@@ -92,6 +92,10 @@ class Emulator5(
         } while (operation != Operation.End)
     }
 
+    fun set(index: Int, value: Long) {
+        data[index] = value
+    }
+
     private fun tick(): Operation {
         val instruction = parseInstruction(data[pc])
         val operation = instruction.operation
