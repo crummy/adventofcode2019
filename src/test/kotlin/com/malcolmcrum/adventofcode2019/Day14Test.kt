@@ -2,15 +2,13 @@ package com.malcolmcrum.adventofcode2019
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
-import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
 
 internal class Day14Test {
     @Test
     fun `test parsing`() {
-        assertThat(Reaction.parse("2 ORE => 2 A")).isEqualTo(Reaction(listOf("ORE", "ORE"), listOf("A", "A")))
-        assertThat(Reaction.parse("3 A, 1 E => 1 FUEL")).isEqualTo(Reaction(listOf("A", "A", "A", "E"), listOf("FUEL")))
+        assertThat(Chemical.parse("2 ORE => 2 A")).isEqualTo(Chemical("A", 2, listOf(Produces("ORE", 2))))
+        assertThat(Chemical.parse("3 A, 1 E => 1 FUEL")).isEqualTo(Chemical("FUEL", 1, listOf(Produces("A", 3), Produces("E", 1))))
     }
 
     @Test
@@ -24,12 +22,10 @@ internal class Day14Test {
             7 A, 1 E => 1 FUEL
         """.trimIndent()
 
-        val reactions = input.split("\n")
-            .map { Reaction.parse(it) }
+        val chemicals = parseReactions(input.split("\n"))
 
-        val output = reactions.produce(listOf(FUEL))
-        println(output)
-        assertThat(output.count { it == "ORE" }).isEqualTo(31)
+        val output = chemicals.synthesize(FUEL)
+        assertThat(output).isEqualTo(31)
     }
 
     @Test
@@ -54,10 +50,9 @@ internal class Day14Test {
             5 BHXH, 4 VRPVC => 5 LTCX
         """.trimIndent()
 
-        val reactions = input.split("\n")
-            .map { Reaction.parse(it) }
+        val chemicals = parseReactions(input.split("\n"))
 
-        val output = reactions.produce(listOf(FUEL))
-        assertThat(output.count { it == "ORE" }).isEqualTo(2210736)
+        val output = chemicals.synthesize(FUEL)
+        assertThat(output).isEqualTo(2210736)
     }
 }

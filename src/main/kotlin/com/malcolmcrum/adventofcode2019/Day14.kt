@@ -1,59 +1,58 @@
 package com.malcolmcrum.adventofcode2019
 
+import java.io.File
+import java.util.concurrent.ConcurrentHashMap
+
 const val FUEL = "FUEL"
+const val ORE = "ORE"
 
-data class Reaction(val requirements: List<String>, val produces: List<String>) {
+data class Produces(val chemical: String, val amount: Int)
+data class Chemical(val name: String, val amount: Int, val produces: List<Produces>) {
     companion object {
-        val ORE = Reaction(emptyList(), listOf("ORE"))
-
-        val ioRegex = "(.*) => (.*)".toRegex()
-        val resourceRegex = "(\\d+) (\\w+)".toRegex()
-        fun parse(string: String): Reaction {
+        private val ioRegex = "(.*) => (.*)".toRegex()
+        private val resourceRegex = "(\\d+) (\\w+)".toRegex()
+        fun parse(string: String): Chemical {
             val (input, output) = ioRegex.matchEntire(string)!!.destructured
-            val requirements = input.split(", ")
-                .flatMap { resource ->
+            val produces = input.split(", ")
+                .map { resource ->
                     val (amount, name) = resourceRegex.matchEntire(resource)!!.destructured
-                    name.repeat(amount.toInt())
+                    Produces(name, amount.toInt())
                 }
             val (amount, name) = resourceRegex.matchEntire(output)!!.destructured
-            val produces = name.repeat(amount.toInt())
-
-            return Reaction(requirements, produces)
+            return Chemical(name, amount.toInt(), produces)
         }
     }
 }
 
-fun String.repeat(times: Int): List<String> {
-    return (0 until times).map { this }
+fun parseReactions(lines: List<String>): Map<String, Chemical> {
+    return lines.map {
+        val chemical = Chemical.parse(it)
+        chemical.name to chemical
+    }.toMap()
 }
 
-fun <T> List<T>.containsOnly(value: T): Boolean {
-    return this.all { it == value }
+fun Map<String, Chemical>.synthesize(goal: String): Int {
+    val totals: MutableMap<String, Int> = ConcurrentHashMap() // allows modification during iteration
+    keys.forEach { totals[it] = 0 }
+    totals[goal] = 1
+    do {
+        val chemicalsToProcess = totals.filter { it.value > 0 }.filter { it.key != ORE }.keys
+        chemicalsToProcess.forEach{ name ->
+            val chemical = this.getValue(name)
+            totals[name] = totals.getValue(name) - chemical.amount
+            chemical.produces.forEach { product ->
+                totals.merge(product.chemical, product.amount, Int::plus) // totals[chemical] += amount
+            }
+        }
+    } while (chemicalsToProcess.isNotEmpty())
+    return totals[ORE]!!
 }
 
-// Does not ignore dupes!
-fun MutableList<String>.remove(other: List<String>) {
-    other.forEach { this.remove(it) }
-}
+fun main() {
+    val input = File("src/main/resources/input/day14.txt").readLines()
+    val reactions = parseReactions(input)
 
-// Does not ignore dupes!
-// adopted from https://stackoverflow.com/a/53687760/281657
-fun List<String>.contains(other: List<String>): Boolean {
-    var count = 0
-    this.intersect(other).forEach { x -> count += listOf(this.count {it == x}, other.count {it == x}).min()!! }
-    return count == other.size
-}
+    val ore = reactions.synthesize(FUEL)
 
-fun List<Reaction>.produce(requirements: List<String>): List<String> {
-    // Start at the end: assuming we've already produced the requirements.
-    val produced = requirements.toMutableList()
-
-    // We know we're done when produced list contains only ORE.
-    while (!produced.containsOnly("ORE")) {
-        val nextReaction = this.firstOrNull { produced.contains(it.produces) } ?: this.first { produced.containsAll(it.produces) }
-        produced.remove(nextReaction.produces)
-        produced.addAll(nextReaction.requirements)
-    }
-
-    return produced
+    println(ore)
 }
