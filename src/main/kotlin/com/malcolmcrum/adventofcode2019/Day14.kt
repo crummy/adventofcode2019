@@ -1,7 +1,7 @@
 package com.malcolmcrum.adventofcode2019
 
 import java.io.File
-import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.abs
 
 const val FUEL = "FUEL"
 const val ORE = "ORE"
@@ -31,28 +31,58 @@ fun parseReactions(lines: List<String>): Map<String, Chemical> {
     }.toMap()
 }
 
-fun Map<String, Chemical>.synthesize(goal: String): Int {
-    val totals: MutableMap<String, Int> = ConcurrentHashMap() // allows modification during iteration
-    keys.forEach { totals[it] = 0 }
-    totals[goal] = 1
+fun Map<String, Chemical>.synthesizeFuel(amount: Long = 1L): Long {
+    val totals: MutableMap<String, Long> = entries.map { it.key to 0L }
+        .toMap().toMutableMap()
+        .apply { this[FUEL] = amount }
     do {
-        val chemicalsToProcess = totals.filter { it.value > 0 }.filter { it.key != ORE }.keys
-        chemicalsToProcess.forEach{ name ->
+        // First, calculate chemical in bulk.
+        var chemicalsToProcess = totals.filter { it.value > 0 }.filter { it.key != ORE }.keys
+        chemicalsToProcess.forEach { name ->
+            val chemical = this.getValue(name)
+            val reactionIterations = totals.getValue(name) / chemical.amount // produce chemical in bulk
+            totals[name] = totals.getValue(name) % chemical.amount // some is left over
+            chemical.produces.forEach { product ->
+                totals.merge(product.chemical, product.amount * reactionIterations, Long::plus) // totals[chemical] += amount
+            }
+        }
+        // Then do the remainders.
+        chemicalsToProcess = totals.filter { it.value > 0 }.filter { it.key != ORE }.keys
+        chemicalsToProcess.forEach { name ->
             val chemical = this.getValue(name)
             totals[name] = totals.getValue(name) - chemical.amount
             chemical.produces.forEach { product ->
-                totals.merge(product.chemical, product.amount, Int::plus) // totals[chemical] += amount
+                totals.merge(product.chemical, product.amount.toLong(), Long::plus) // totals[chemical] += amount
             }
         }
     } while (chemicalsToProcess.isNotEmpty())
     return totals[ORE]!!
 }
 
+fun Map<String, Chemical>.fuelGivenOre(amount: Long): Long {
+    val fuelForOneOre = synthesizeFuel(1)
+    var min = 0L
+    var max = amount
+    var fuelGuess: Long
+    do {
+        fuelGuess = (max - min) / 2 + min
+        val ore = synthesizeFuel(fuelGuess)
+        println("$fuelGuess fuel requires $ore ore, min: $min, max: $max")
+        if (ore < amount) min = fuelGuess + 1
+        else if (ore > amount) max = fuelGuess - 1
+    } while (abs(ore - amount) > fuelForOneOre)
+    return fuelGuess
+}
+
 fun main() {
     val input = File("src/main/resources/input/day14.txt").readLines()
     val reactions = parseReactions(input)
 
-    val ore = reactions.synthesize(FUEL)
+    val ore = reactions.synthesizeFuel()
 
     println(ore)
+
+    val fuelForOneTrillionOre = reactions.fuelGivenOre(1000000000000)
+
+    println(fuelForOneTrillionOre)
 }
