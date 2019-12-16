@@ -80,7 +80,8 @@ class Emulator5(
     private val name: String,
     data: LongArray,
     val input: () -> Long,
-    val output: (Long) -> Unit
+    val output: (Long) -> Unit,
+    val loggingEnabled: Boolean = false
 ) {
     private val data = ResizableArray(data.copyOf())
     private var pc = 0
@@ -94,6 +95,10 @@ class Emulator5(
 
     fun set(index: Int, value: Long) {
         data[index] = value
+    }
+
+    private fun log(message: String) {
+        if (loggingEnabled) println("$name: $message")
     }
 
     private fun tick(): Operation {
@@ -120,13 +125,13 @@ class Emulator5(
     }
 
     private fun end(): Int? {
-        println("$name: END")
+        log("END")
         return null
     }
 
     private fun adjustRelativeBase(instruction: Instruction): Int? {
         val offset = data[instruction.param1.invoke(pc + 1L)].toInt()
-        println("$name: relative base = $offset")
+        log("relative base = $offset")
         relativeBase += offset
         return null
     }
@@ -136,7 +141,7 @@ class Emulator5(
         val operand2 = data[instruction.param2.invoke(pc + 2L)]
         val result = if (operand1 == operand2) 1 else 0L
         val destination = instruction.param3.invoke(pc + 3L).toInt()
-        println("$name: data[$destination] = $operand1 == $operand2 = $result")
+        log("data[$destination] = $operand1 == $operand2 = $result")
         data[destination] = result
         return null
     }
@@ -146,7 +151,7 @@ class Emulator5(
         val operand2 = data[instruction.param2.invoke(pc + 2L)]
         val result = if (operand1 < operand2) 1 else 0L
         val destination = instruction.param3.invoke(pc + 3L).toInt()
-        println("$name: data[$destination] = $operand1 < $operand2 = $result")
+        log("data[$destination] = $operand1 < $operand2 = $result")
         data[destination] = result
         return null
     }
@@ -172,7 +177,7 @@ class Emulator5(
     private fun readInput(instruction: Instruction): Int? {
         val destination = instruction.param1.invoke(pc + 1L).toInt()
         val value = input.invoke()
-        println("$name: data[$destination] = $value from input")
+        log("data[$destination] = $value from input")
         data[destination] = value
         return null
     }
@@ -181,7 +186,7 @@ class Emulator5(
         val operand1 = data[instruction.param1.invoke(pc + 1L)]
         val operand2 = data[instruction.param2.invoke(pc + 2L)]
         val destination = instruction.param3.invoke(pc + 3L).toInt()
-        println("$name: data[$destination] = $operand1 * $operand2")
+        log("data[$destination] = $operand1 * $operand2")
         data[destination] = operand1 * operand2
         return null
     }
@@ -190,7 +195,7 @@ class Emulator5(
         val operand1 = data[instruction.param1.invoke(pc + 1L)]
         val operand2 = data[instruction.param2.invoke(pc + 2L)]
         val destination = instruction.param3.invoke(pc + 3L).toInt()
-        println("$name: data[$destination] = $operand1 + $operand2")
+        log("data[$destination] = $operand1 + $operand2")
         data[destination] = operand1 + operand2
         return null
     }
@@ -198,7 +203,7 @@ class Emulator5(
     private fun writeOutput(instruction: Instruction): Int? {
         val address = instruction.param1.invoke(pc + 1L).toInt()
         val value = data[address]
-        println("$name: output += data[$address] ($value)")
+        log("output += data[$address] ($value)")
         output.invoke(value)
         return null
     }
