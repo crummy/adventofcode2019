@@ -12,7 +12,7 @@ class Droid {
     lateinit var lastMove: Input
 
     val move: () -> Long = {
-        val (destination, path) = nearestUnknownTile()
+        val (destination, path) = nearestUnknownTile() ?: throw MapExploredException()
         val direction = when (path.first()) {
             position + NORTH -> NORTH
             position + SOUTH -> SOUTH
@@ -47,50 +47,31 @@ class Droid {
         }
     }
 
-    // adapted from https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2
-    private fun nearestUnknownTile(): Pair<Tile, List<Tile>> {
-        val open = mutableMapOf(position to Node(position))
-        val closed = mutableSetOf<Tile>()
-
-        fun findAdjacentEmptyTile(current: Node, direction: Input): Pair<Tile, List<Tile>>? {
-            val tile = current.tile + direction
-            val entity = knownMap[tile]
-            if (entity == null) {
-                return Pair(tile, current.getPath().plus(tile).drop(1))
-            } else if (entity == WALL || closed.contains(tile)) {
-                // ignore it
-            } else if (!open.contains(tile)) {
-                open[tile] = Node(tile, current.cost + 1, current)
-            } else {
-                val existingCost = open[tile]!!.cost
-                if (existingCost > current.cost + 1) {
-                    open[tile] = Node(tile, current.cost + 1, current)
-                }
-            }
-            return null
-        }
-
-        do {
-            val current = open.minBy { (_, node) -> node.cost }!!.value
-            open.remove(current.tile)
-            closed.add(current.tile)
-            val result = findAdjacentEmptyTile(current, NORTH)
-                ?: findAdjacentEmptyTile(current, EAST)
-                ?: findAdjacentEmptyTile(current, SOUTH)
-                ?: findAdjacentEmptyTile(current, WEST)
-            if (result != null) return result
-        } while (open.isNotEmpty())
-        throw MapExploredException()
+    private fun nearestUnknownTile(): Pair<Tile, List<Tile>>? {
+        return findTile(position, position) { _, entity -> entity == null }
     }
 
     fun pathFrom(start: Tile, target: Tile): List<Tile> {
+        return findTile(start, target) { tile, _ -> tile == oxygen}!!.second
+    }
+
+    // haha oh jeez. so wasteful
+    fun maxDistanceFrom(start: Tile): Int {
+        return knownMap.filter { it.value == EMPTY }
+            .map { findTile(start, it.key) { tile, _ -> tile == it.key }!! }
+            .map { it.second.size }
+            .max()!!
+    }
+
+    // adapted from https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2
+    fun findTile(start: Tile, target: Tile, test: (Tile, Entity?) -> Boolean): Pair<Tile, List<Tile>>? {
         val open = mutableMapOf(start to Node(start))
         val closed = mutableSetOf<Tile>()
 
-        fun findOxygenTile(current: Node, direction: Input): Pair<Tile, List<Tile>>? {
+        fun findMatchingTile(current: Node, direction: Input): Pair<Tile, List<Tile>>? {
             val tile = current.tile + direction
-            val entity = knownMap[tile] ?: error("Found an empty tile - map has not been fully explored")
-            if (entity == OXYGEN) {
+            val entity = knownMap[tile]
+            if (test.invoke(tile, entity)) {
                 return Pair(tile, current.getPath().plus(tile).drop(1))
             } else if (entity == WALL || closed.contains(tile)) {
                 // ignore it
@@ -109,14 +90,16 @@ class Droid {
             val current = open.minBy { (_, node) -> node.costTo(target) }!!.value
             open.remove(current.tile)
             closed.add(current.tile)
-            val result = findOxygenTile(current, NORTH)
-                ?: findOxygenTile(current, EAST)
-                ?: findOxygenTile(current, SOUTH)
-                ?: findOxygenTile(current, WEST)
-            if (result != null) return result.second
+            val result = findMatchingTile(current, NORTH)
+                ?: findMatchingTile(current, EAST)
+                ?: findMatchingTile(current, SOUTH)
+                ?: findMatchingTile(current, WEST)
+            if (result != null) return result
         } while (open.isNotEmpty())
-        throw RuntimeException("Couldn't find path from $start to $target")
+        return null
     }
+
+
 
 
     enum class Entity {
@@ -203,6 +186,20 @@ fun draw(map: Map<Tile, Droid.Entity>) {
 }
 
 fun main() {
-    val steps = shortestPathToOxygen()
+    val instructions = File("src/main/resources/input/day15.txt").readText()
+        .split(",").map { it.toLong() }.toLongArray()
+    val robot = Droid()
+    try {
+        Emulator5("Robot", instructions, robot.move, robot.update).run()
+    } catch (e: MapExploredException) { // an awkward way to stop the computer...
+        draw(robot.knownMap)
+    }
+
+    val steps = robot.pathFrom(Tile(0, 0), robot.oxygen!!).size
     println(steps)
+
+    val minutesUntilFullOxygen = robot.maxDistanceFrom(robot.oxygen!!)
+
+    println(minutesUntilFullOxygen)
+
 }
