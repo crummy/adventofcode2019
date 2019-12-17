@@ -2,8 +2,18 @@ package com.malcolmcrum.adventofcode2019
 
 import com.malcolmcrum.adventofcode2019.Droid.Entity.*
 import com.malcolmcrum.adventofcode2019.Droid.Input.*
+import org.hexworks.zircon.api.AppConfigs.newConfig
+import org.hexworks.zircon.api.CP437TilesetResources.wanderlust16x16
+import org.hexworks.zircon.api.SwingApplications.startTileGrid
+import org.hexworks.zircon.api.builder.data.TileBuilder
+import org.hexworks.zircon.api.builder.screen.ScreenBuilder
+import org.hexworks.zircon.api.data.Position
+import org.hexworks.zircon.api.data.Size
+import org.hexworks.zircon.api.data.impl.GridPosition
+import org.hexworks.zircon.api.screen.Screen
 import java.io.File
 import kotlin.math.abs
+
 
 class Droid {
     val knownMap = mutableMapOf<Tile, Entity>()
@@ -45,6 +55,7 @@ class Droid {
                 println("Found oxygen at $position")
             }
         }
+        ui.draw(knownMap)
     }
 
     private fun nearestUnknownTile(): Pair<Tile, List<Tile>>? {
@@ -52,7 +63,7 @@ class Droid {
     }
 
     fun pathFrom(start: Tile, target: Tile): List<Tile> {
-        return findTile(start, target) { tile, _ -> tile == oxygen}!!.second
+        return findTile(start, target) { tile, _ -> tile == oxygen }!!.second
     }
 
     // haha oh jeez. so wasteful
@@ -98,8 +109,6 @@ class Droid {
         } while (open.isNotEmpty())
         return null
     }
-
-
 
 
     enum class Entity {
@@ -176,7 +185,7 @@ fun draw(map: Map<Tile, Droid.Entity>) {
     val height = abs(maxY - minY) + 1
     val grid = array2dOfChar(width, height, ' ')
     for ((tile, entity) in map) {
-        grid[tile.second - minY][tile.first - minX] = when(entity) {
+        grid[tile.second - minY][tile.first - minX] = when (entity) {
             WALL -> '#'
             EMPTY -> '.'
             OXYGEN -> '@'
@@ -184,6 +193,7 @@ fun draw(map: Map<Tile, Droid.Entity>) {
     }
     grid.forEach { println(it) }
 }
+val ui = MapUI()
 
 fun main() {
     val instructions = File("src/main/resources/input/day15.txt").readText()
@@ -201,5 +211,48 @@ fun main() {
     val minutesUntilFullOxygen = robot.maxDistanceFrom(robot.oxygen!!)
 
     println(minutesUntilFullOxygen)
+
+}
+
+class MapUI {
+    val tileGrid = startTileGrid(
+        newConfig()
+            .withSize(Size.create(80, 50))
+            .withDefaultTileset(wanderlust16x16())
+            .build()
+    )
+    val screen: Screen = ScreenBuilder.createScreenFor(tileGrid)
+    val wall = TileBuilder.newBuilder().buildCharacterTile().withCharacter('#')
+    val empty = TileBuilder.newBuilder().buildCharacterTile().withCharacter('.')
+    val oxygen = TileBuilder.newBuilder().buildCharacterTile().withCharacter('@')
+    init {
+        Thread.sleep(5000)
+    }
+
+    fun draw(map: Map<Tile, Droid.Entity>) {
+        var minX = Int.MAX_VALUE
+        var maxX = Int.MIN_VALUE
+        var maxY = Int.MIN_VALUE
+        var minY = Int.MAX_VALUE
+        for (tile in map.keys) {
+            if (tile.first < minX) minX = tile.first
+            if (tile.second < minY) minY = tile.second
+            if (tile.first > maxX) maxX = tile.first
+            if (tile.second > maxY) maxY = tile.second
+        }
+        val width = abs(maxX - minX) + 1
+        val height = abs(maxY - minY) + 1
+        tileGrid.clear()
+        for ((position, entity) in map) {
+            val tile = when (entity) {
+                WALL -> wall
+                EMPTY -> empty
+                OXYGEN -> oxygen
+            }
+            tileGrid.setTileAt(GridPosition(position.first - minX, position.second - minY), tile)
+        }
+        screen.display()
+        Thread.sleep(5)
+    }
 
 }
