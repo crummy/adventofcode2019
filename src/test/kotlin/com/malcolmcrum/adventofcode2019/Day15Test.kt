@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test
 internal class Day15Test {
     @Test
     fun `test adding position to tiles`() {
-        assertThat(Tile(0, 0) + Droid.Input.NORTH).isEqualTo(Tile(0, 1))
-        assertThat(Tile(4, 3) + Droid.Input.EAST).isEqualTo(Tile(5, 3))
+        assertThat(Tile(0, 0) + Droid.Direction.NORTH).isEqualTo(Tile(0, 1))
+        assertThat(Tile(4, 3) + Droid.Direction.EAST).isEqualTo(Tile(5, 3))
     }
 
     @Test

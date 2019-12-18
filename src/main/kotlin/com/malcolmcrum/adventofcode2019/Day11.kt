@@ -5,8 +5,8 @@ import kotlin.math.abs
 
 typealias Panel = Pair<Int, Int>
 
-enum class Direction(private val x: Int, private val y: Int) {
-    LEFT(-1, 0), UP(0, 1), RIGHT(1, 0), DOWN(0, -1);
+enum class Direction(val x: Int, val y: Int) {
+    LEFT(-1, 0), UP(0, -1), RIGHT(1, 0), DOWN(0, 1);
 
     fun turnLeft(): Direction {
         var index = (ordinal - 1) % (values().size)

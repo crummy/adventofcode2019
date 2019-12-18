@@ -1,7 +1,7 @@
 package com.malcolmcrum.adventofcode2019
 
 import com.malcolmcrum.adventofcode2019.Droid.Entity.*
-import com.malcolmcrum.adventofcode2019.Droid.Input.*
+import com.malcolmcrum.adventofcode2019.Droid.Direction.*
 import java.io.File
 import kotlin.math.abs
 
@@ -9,7 +9,7 @@ class Droid {
     val knownMap = mutableMapOf<Tile, Entity>()
     var oxygen: Tile? = null
     var position = Tile(0, 0)
-    lateinit var lastMove: Input
+    lateinit var lastMove: Direction
 
     val move: () -> Long = {
         val (destination, path) = nearestUnknownTile() ?: throw MapExploredException()
@@ -68,7 +68,7 @@ class Droid {
         val open = mutableMapOf(start to Node(start))
         val closed = mutableSetOf<Tile>()
 
-        fun findMatchingTile(current: Node, direction: Input): Pair<Tile, List<Tile>>? {
+        fun findMatchingTile(current: Node, direction: Direction): Pair<Tile, List<Tile>>? {
             val tile = current.tile + direction
             val entity = knownMap[tile]
             if (test.invoke(tile, entity)) {
@@ -106,7 +106,7 @@ class Droid {
         WALL, EMPTY, OXYGEN
     }
 
-    enum class Input(val code: Int, val x: Int, val y: Int) {
+    enum class Direction(val code: Int, val x: Int, val y: Int) {
         NORTH(1, 0, 1),
         SOUTH(2, 0, -1),
         WEST(3, -1, 0),
@@ -144,7 +144,7 @@ class Droid {
 
 class MapExploredException : Exception()
 
-operator fun Tile.plus(direction: Droid.Input): Tile {
+operator fun Tile.plus(direction: Droid.Direction): Tile {
     return Tile(first + direction.x, second + direction.y)
 }
 

@@ -182,11 +182,11 @@ class Emulator4(
 
 class ResizableArray(private var data: LongArray) {
     operator fun get(index: Int): Long {
-        return if (index > data.size) 0 else data[index]
+        return if (index >= data.size) 0 else data[index]
     }
 
     operator fun get(index: Long): Long {
-        return if (index > data.size) 0 else data[index.toInt()]
+        return if (index >= data.size) 0 else data[index.toInt()]
     }
 
     operator fun set(index: Int, value: Long) {
