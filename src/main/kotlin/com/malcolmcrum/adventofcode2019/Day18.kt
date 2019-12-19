@@ -4,9 +4,9 @@ import java.io.File
 import kotlin.math.abs
 
 class Vault(
-    val map: Array<CharArray>,
-    val doors: Map<Char, Tile>,
-    val keys: Map<Char, Tile>
+    private val map: Array<CharArray>,
+    private val doors: Map<Char, Tile>,
+    private val keys: Map<Char, Tile>
 ) {
     private val keyPaths: Map<KeyPair, KeyPath>
 
@@ -29,34 +29,37 @@ class Vault(
         this.keyPaths = keyPaths
     }
 
-    fun collectAllKeys(keysInPocket: MutableSet<Char> = mutableSetOf(), lastKey: Char = '@'): Int {
+    fun collectAllKeys(keysInPocket: Set<Char> = setOf('@'), lastKey: Char = '@'): Int {
         if (keysInPocket.size == keys.size) {
             return 0
         }
-        val accessibleKeys = keys.keys
+        return keys.keys
             .filter { !keysInPocket.contains(it) }
             .filter { it != lastKey }
             .mapNotNull { key ->
                 val keyPair = KeyPair.create(lastKey, key)
-                val (distance, doors) = keyPaths.getValue(keyPair)
-                val canReachKey = doors.none { it.isLockedDoor(keysInPocket) }
-                if (canReachKey) key to distance else null
-            }.toMap()
-        return accessibleKeys.map { (key, distance) ->
-            distance + collectAllKeys(keysInPocket.toMutableSet().apply { this.add(key) }, key)
-        }.min()!!
+                val (distance, doorsInBetween) = keyPaths.getValue(keyPair)
+                val canReachKey = doorsInBetween.all { keysInPocket.contains(it.toLowerCase()) }
+                return@mapNotNull if (canReachKey) {
+                    val total = distance + collectAllKeys(keysInPocket + key, key)
+                    if (keysInPocket.isEmpty()) {
+                        println("$keysInPocket: $total")
+                    }
+                    total
+                } else null
+            }.min()!!
     }
 
     fun Tile.pathTo(target: Tile): List<Tile> {
         val open = mutableMapOf(this to Node(this))
-        val closed = mutableSetOf<Tile>()
+        val explored = mutableSetOf<Tile>()
 
         fun findMatchingTile(current: Node, direction: Direction): List<Tile>? {
             val tile = current.tile + direction
             val entity = map[tile]
             if (tile == target) {
                 return current.getPath().plus(tile).drop(1)
-            } else if (entity == WALL || closed.contains(tile)) {
+            } else if (entity == WALL || explored.contains(tile)) {
                 // ignore it
             } else if (!open.contains(tile)) {
                 open[tile] = Node(tile, current.cost + 1, current)
@@ -72,7 +75,7 @@ class Vault(
         do {
             val current = open.minBy { (_, node) -> node.costTo(target) }!!.value
             open.remove(current.tile)
-            closed.add(current.tile)
+            explored.add(current.tile)
             val foundTile = findMatchingTile(current, Direction.UP)
                 ?: findMatchingTile(current, Direction.RIGHT)
                 ?: findMatchingTile(current, Direction.DOWN)
@@ -80,10 +83,6 @@ class Vault(
             if (foundTile != null) return foundTile
         } while (open.isNotEmpty())
         throw Exception("No path found from $this to $target")
-    }
-
-    private fun Char.isLockedDoor(keysInPocket: Set<Char>): Boolean {
-        return doors.contains(this) && !keysInPocket.contains(this.toLowerCase())
     }
 
     data class Node(val tile: Tile, val cost: Int = 0, var parent: Node? = null) {
