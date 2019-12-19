@@ -5,39 +5,58 @@ import kotlin.math.abs
 
 class Vault(
     val map: Array<CharArray>,
-    val entrance: Tile,
     val doors: Map<Char, Tile>,
     val keys: Map<Char, Tile>
 ) {
-    val distanceCache: MutableMap<KeyToKey, Int?> = mutableMapOf()
+    private val keyPaths: Map<KeyPair, KeyPath>
 
-    fun collectAllKeys(keysInPocket: MutableSet<Char> = mutableSetOf(), position: Tile = entrance): Int {
+    init {
+        val keyPaths: MutableMap<KeyPair, KeyPath> = mutableMapOf()
+
+        keys.forEach { (key, location) ->
+            keys.filter { it.key != key }.forEach { (otherKey, otherLocation) ->
+                val keyPair = KeyPair.create(key, otherKey)
+                keyPaths.computeIfAbsent(keyPair) {
+                    val path = location.pathTo(otherLocation)
+                    val doorsBetween = doors.filter { (_, door) -> path.contains(door) }
+                        .map { it.key }
+                        .toList()
+                    KeyPath(path.size, doorsBetween)
+                }
+            }
+        }
+
+        this.keyPaths = keyPaths
+    }
+
+    fun collectAllKeys(keysInPocket: MutableSet<Char> = mutableSetOf(), lastKey: Char = '@'): Int {
         if (keysInPocket.size == keys.size) {
-            println()
             return 0
         }
-        val accessibleKeys = keys.filterKeys { !keysInPocket.contains(it) }
-            .mapNotNull { (key, destination) ->
-                distanceCache.computeIfAbsent(KeyToKey(position, destination, keysInPocket.toList().sorted())) {
-                    position.canTravelTo(destination, keysInPocket)
-                }?.let { key to it }
+        val accessibleKeys = keys.keys
+            .filter { !keysInPocket.contains(it) }
+            .filter { it != lastKey }
+            .mapNotNull { key ->
+                val keyPair = KeyPair.create(lastKey, key)
+                val (distance, doors) = keyPaths.getValue(keyPair)
+                val canReachKey = doors.none { it.isLockedDoor(keysInPocket) }
+                if (canReachKey) key to distance else null
             }.toMap()
         return accessibleKeys.map { (key, distance) ->
-            print("$key,")
-            distance + collectAllKeys(keysInPocket.toMutableSet().apply { this.add(key) }, keys.getValue(key))
+            distance + collectAllKeys(keysInPocket.toMutableSet().apply { this.add(key) }, key)
         }.min()!!
     }
 
-    fun Tile.canTravelTo(target: Tile, keysInPocket: Set<Char>): Int? {
+    fun Tile.pathTo(target: Tile): List<Tile> {
         val open = mutableMapOf(this to Node(this))
         val closed = mutableSetOf<Tile>()
 
-        fun findMatchingTile(current: Node, direction: Direction): Int? {
+        fun findMatchingTile(current: Node, direction: Direction): List<Tile>? {
             val tile = current.tile + direction
             val entity = map[tile]
             if (tile == target) {
-                return current.getPath().size
-            } else if (entity == WALL || closed.contains(tile) || entity.isLockedDoor(keysInPocket)) {
+                return current.getPath().plus(tile).drop(1)
+            } else if (entity == WALL || closed.contains(tile)) {
                 // ignore it
             } else if (!open.contains(tile)) {
                 open[tile] = Node(tile, current.cost + 1, current)
@@ -60,7 +79,7 @@ class Vault(
                 ?: findMatchingTile(current, Direction.LEFT)
             if (foundTile != null) return foundTile
         } while (open.isNotEmpty())
-        return null
+        throw Exception("No path found from $this to $target")
     }
 
     private fun Char.isLockedDoor(keysInPocket: Set<Char>): Boolean {
@@ -84,6 +103,16 @@ class Vault(
         }
     }
 
+    data class KeyPath(val distance: Int, val doorsBetween: List<Char>)
+
+    data class KeyPair(val key1: Char, val key2: Char) {
+        companion object {
+            fun create(key1: Char, key2: Char): KeyPair {
+                return if (key1 < key2) KeyPair(key1, key2) else KeyPair(key2, key1)
+            }
+        }
+    }
+
     companion object {
         const val WALL = '#'
         const val ENTRANCE = '@'
@@ -93,29 +122,21 @@ class Vault(
             val height = lines.size
             val width = lines[0].length
             val array = array2dOfChar(height, width, '?')
-            var entrance: Tile? = null
             val doors: MutableMap<Char, Tile> = mutableMapOf()
             val keys: MutableMap<Char, Tile> = mutableMapOf()
             lines.forEachIndexed { y, line ->
                 line.forEachIndexed { x, char ->
                     array[y][x] = char
                     when {
-                        char == ENTRANCE -> entrance = Tile(x, y)
+                        char == ENTRANCE -> keys[char] = Tile(x, y)
                         char.isLowerCase() -> keys[char] = Tile(x, y)
                         char.isUpperCase() -> doors[char] = Tile(x, y)
                     }
                 }
             }
-            return Vault(array, entrance!!, doors, keys)
+            return Vault(array, doors, keys)
         }
     }
-
-    data class KeyToKey(
-        val position: Tile,
-        val destination: Tile,
-        val keysInPocket: List<Char>
-    )
-
 }
 
 private operator fun Array<CharArray>.get(tile: Tile): Char {
