@@ -2,7 +2,7 @@ package com.malcolmcrum.adventofcode2019
 
 import java.io.File
 
-const val BOX_SIZE = 10
+const val BOX_SIZE = 100
 
 val day19instructions = lazy {
     File("src/main/resources/input/day19.txt").readText()
@@ -56,8 +56,7 @@ fun firstFittingBox(): Pair<Int, Int> {
     var x = 0
     (10..10000).forEach { y ->
         while (checkForBeam(x, y) == 0) x++
-        println("testing box at $x, $y")
-        val box = Box(x, y - 99, 99)
+        val box = Box(x, y - (BOX_SIZE-1), BOX_SIZE-1)
         if (doesBoxFit(box)) {
             return box.topLeft
         }
