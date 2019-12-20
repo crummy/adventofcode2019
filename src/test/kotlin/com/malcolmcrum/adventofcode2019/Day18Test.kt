@@ -32,4 +32,23 @@ internal class Day18Test {
 
         assertThat(vault.collectAllKeys()).isEqualTo(86)
     }
+
+    @Test
+    fun `test with complex path`() {
+        val input = """
+            #################
+            #i.G..c...e..H.p#
+            ########.########
+            #j.A..b...f..D.o#
+            ########@########
+            #k.E..a...g..B.n#
+            ########.########
+            #l.F..d...h..C.m#
+            #################
+        """.trimIndent()
+
+        val vault = Vault.parse(input)
+
+        assertThat(vault.collectAllKeys()).isEqualTo(136)
+    }
 }

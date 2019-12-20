@@ -8,25 +8,45 @@ class Vault(
     private val doors: Map<Char, Tile>,
     private val keys: Map<Char, Tile>
 ) {
-    private val keyPaths: Map<KeyPair, KeyPath>
+    private val distanceBetweenKeys: Map<KeyPair, Int>
+    private val keysRequired: Map<Char, Set<Char>>
+    private val pathFromStart: Map<Char, Set<Tile>>
+    private val uniquePath: Map<Char, Set<Tile>>
 
     init {
-        val keyPaths: MutableMap<KeyPair, KeyPath> = mutableMapOf()
+        val keyPaths: MutableMap<KeyPair, Int> = mutableMapOf()
 
         keys.forEach { (key, location) ->
             keys.filter { it.key != key }.forEach { (otherKey, otherLocation) ->
                 val keyPair = KeyPair.create(key, otherKey)
                 keyPaths.computeIfAbsent(keyPair) {
                     val path = location.pathTo(otherLocation)
-                    val doorsBetween = doors.filter { (_, door) -> path.contains(door) }
-                        .map { it.key }
-                        .toList()
-                    KeyPath(path.size, doorsBetween)
+                    path.size
                 }
             }
         }
+        this.distanceBetweenKeys = keyPaths
 
-        this.keyPaths = keyPaths
+        val start = keys.getValue(ENTRANCE)
+        this.keysRequired = keys.filterKeys { it != ENTRANCE }.map { (key, location) ->
+            val path = start.pathTo(location)
+            val doorsBetween = doors.filter { (_, door) -> path.contains(door) }
+                .map { it.key.toLowerCase() }
+                .toSet()
+            key to doorsBetween
+        }.toMap()
+        println(keysRequired)
+
+        this.pathFromStart = keys.filterKeys { it != ENTRANCE }.map { (key, location) ->
+            key to start.pathTo(location).toSet()
+        }.toMap()
+
+        this.uniquePath = keys.filterKeys { it != ENTRANCE }.map { (key, _) ->
+            val path = pathFromStart.getValue(key).toMutableSet()
+            pathFromStart.filterKeys { it != key }.forEach { (_, otherPath) -> path -= otherPath }
+            key to path
+        }.toMap()
+
     }
 
     fun collectAllKeys(keysInPocket: Set<Char> = setOf('@'), lastKey: Char = '@'): Int {
@@ -35,17 +55,12 @@ class Vault(
         }
         return keys.keys
             .filter { !keysInPocket.contains(it) }
-            .filter { it != lastKey }
             .mapNotNull { key ->
                 val keyPair = KeyPair.create(lastKey, key)
-                val (distance, doorsInBetween) = keyPaths.getValue(keyPair)
-                val canReachKey = doorsInBetween.all { keysInPocket.contains(it.toLowerCase()) }
+                val distance = distanceBetweenKeys.getValue(keyPair)
+                val canReachKey = keysInPocket.containsAll(keysRequired.getValue(key))
                 return@mapNotNull if (canReachKey) {
-                    val total = distance + collectAllKeys(keysInPocket + key, key)
-                    if (keysInPocket.isEmpty()) {
-                        println("$keysInPocket: $total")
-                    }
-                    total
+                    distance + collectAllKeys(keysInPocket + key, key)
                 } else null
             }.min()!!
     }
@@ -101,8 +116,6 @@ class Vault(
             return cost + abs(tile.first - target.first) + abs(tile.second - target.second)
         }
     }
-
-    data class KeyPath(val distance: Int, val doorsBetween: List<Char>)
 
     data class KeyPair(val key1: Char, val key2: Char) {
         companion object {
