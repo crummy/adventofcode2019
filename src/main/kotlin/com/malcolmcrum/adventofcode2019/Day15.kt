@@ -7,7 +7,7 @@ import org.hexworks.zircon.api.CP437TilesetResources.wanderlust16x16
 import org.hexworks.zircon.api.SwingApplications.startTileGrid
 import org.hexworks.zircon.api.builder.data.TileBuilder
 import org.hexworks.zircon.api.builder.screen.ScreenBuilder
-import org.hexworks.zircon.api.data.Position
+import org.hexworks.zircon.api.color.TileColor
 import org.hexworks.zircon.api.data.Size
 import org.hexworks.zircon.api.data.impl.GridPosition
 import org.hexworks.zircon.api.screen.Screen
@@ -55,7 +55,7 @@ class Droid {
                 println("Found oxygen at $position")
             }
         }
-        ui.draw(knownMap)
+        ui.draw(knownMap, position)
     }
 
     private fun nearestUnknownTile(): Pair<Tile, List<Tile>>? {
@@ -193,6 +193,7 @@ fun draw(map: Map<Tile, Droid.Entity>) {
     }
     grid.forEach { println(it) }
 }
+
 val ui = MapUI()
 
 fun main() {
@@ -205,8 +206,9 @@ fun main() {
         draw(robot.knownMap)
     }
 
-    val steps = robot.pathFrom(Tile(0, 0), robot.oxygen!!).size
-    println(steps)
+    val steps = robot.pathFrom(Tile(0, 0), robot.oxygen!!)
+    println(steps.size)
+    ui.draw(robot.knownMap, robot.position, steps.toSet())
 
     val minutesUntilFullOxygen = robot.maxDistanceFrom(robot.oxygen!!)
 
@@ -217,19 +219,24 @@ fun main() {
 class MapUI {
     val tileGrid = startTileGrid(
         newConfig()
-            .withSize(Size.create(80, 50))
+            .withSize(Size.create(50, 50))
             .withDefaultTileset(wanderlust16x16())
             .build()
     )
     val screen: Screen = ScreenBuilder.createScreenFor(tileGrid)
     val wall = TileBuilder.newBuilder().buildCharacterTile().withCharacter('#')
     val empty = TileBuilder.newBuilder().buildCharacterTile().withCharacter('.')
+    val highlighted = TileBuilder.newBuilder().buildCharacterTile().withCharacter('.')
+        .withBackgroundColor(TileColor.fromString("blue"))
     val oxygen = TileBuilder.newBuilder().buildCharacterTile().withCharacter('@')
+    val droid = TileBuilder.newBuilder().buildCharacterTile().withCharacter('X')
+        .withBackgroundColor(TileColor.fromString("green"))
+
     init {
         Thread.sleep(5000)
     }
 
-    fun draw(map: Map<Tile, Droid.Entity>) {
+    fun draw(map: Map<Tile, Droid.Entity>, droid: Tile, highlighted: Set<Tile> = setOf()) {
         var minX = Int.MAX_VALUE
         var maxX = Int.MIN_VALUE
         var maxY = Int.MIN_VALUE
@@ -240,19 +247,20 @@ class MapUI {
             if (tile.first > maxX) maxX = tile.first
             if (tile.second > maxY) maxY = tile.second
         }
-        val width = abs(maxX - minX) + 1
-        val height = abs(maxY - minY) + 1
         tileGrid.clear()
         for ((position, entity) in map) {
-            val tile = when (entity) {
-                WALL -> wall
-                EMPTY -> empty
-                OXYGEN -> oxygen
+            val tile = when {
+                highlighted.contains(position) -> this.highlighted
+                position == droid -> this.droid
+                entity == WALL -> wall
+                entity == EMPTY -> empty
+                entity == OXYGEN -> oxygen
+                else -> error("Unhandled tile $entity")
             }
             tileGrid.setTileAt(GridPosition(position.first - minX, position.second - minY), tile)
         }
         screen.display()
-        Thread.sleep(5)
+        Thread.sleep(4)
     }
 
 }
